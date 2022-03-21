@@ -24,34 +24,104 @@ ChartJS.register(
 
 export function LineChart(props) {
     const [monthsCount, setMonthsCount] = useState();
+    const [highValues, setHighValues] = useState();
+    const [labels, setLabels] = useState();
+    const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+    const [selectedYear, setSelectedYear] = useState('all');
+    const [selectedDates, setSelectedDates] = useState([]);
+    const [startDate, setStartDate] = useState('');
+
+    // Count months from api call result
+    useEffect(() => {
+        if(props.lineChartData) {
+            setMonthsCount(Object.keys(props.lineChartData).length);
+        }
+        else {
+            console.log("No months!");
+        }
+      }, [props.lineChartData])
+
+    // Set selected year
+    useEffect(() => {
+        let today = new Date();   
+        let todaysYear = today.getFullYear();
+
+        setCurrentYear(todaysYear);
+
+    }, [selectedYear]);
 
     useEffect(() => {
-        //setMonthsCount(props.lineChartData['Time Series (Digital Currency Monthly)']);
-        //console.log(monthsCount);
-      }, [])
+        if(props.lineChartData) {
+            let datesArr = [];
+            let valuesArr = [];
+            let labelsArr = [];
+            let lineChartDataArr = Object.entries(props.lineChartData);
+            let filteredLineChartDataArr = [];
 
-    //const data = props.data;
+            if (selectedYear == 'all') {               
+                lineChartDataArr.forEach( (key, value) => {
+                    datesArr.push(key[0]);
+                    labelsArr.push(key[0]);
+                    valuesArr.push(key[1]['2a. high (EUR)']);
+                })
+            }
+            else {
+                lineChartDataArr.forEach( (key, value) => {
+                    if(key.toString().includes(selectedYear)) {
+                        filteredLineChartDataArr.push(key);
+                    }
+                })
+                
+                filteredLineChartDataArr.forEach( (key, value) => {
+                    filteredLineChartDataArr.push(key[0]);
+                    labelsArr.push(key[0]);
+                    valuesArr.push(key[1]['2a. high (EUR)']);
+                })
+            }
+
+            // TODO Store all data, not only dates info, maybe use 1 more state array
+            setSelectedDates(datesArr.reverse());
+            setLabels(labelsArr.reverse());
+            setHighValues(valuesArr.reverse());
+        }
+        else {
+            console.log("No data!");
+        }
+      }, [props.lineChartData, selectedYear])
+
+    useEffect(() => {
+        //console.log(selectedDates.length);
+        //console.log(highValues.length);
+    }, [selectedDates, selectedYear, highValues]);  
+
+    
+    // Render chart
     const options = {
         responsive: true,
         plugins: {
             title: {
             display: true,
-            text: 'Chart.js Line Chart',
+            text: 'GC BTC Line Chart',
             },
         },
     };
-    const labels = ['January', 'February', 'March'];
     const graphData = {
-        labels,
+        labels: labels,
         datasets: [
             {
-            label: 'Dataset 1',
-            data: [20, 15, 20],
+            label: 'Highest value',
+            data: highValues,
             borderColor: 'rgb(255, 99, 132)',
             backgroundColor: 'rgba(255, 99, 132, 0.5)',
             }
         ],
+        tension: 0.4
     };
+
+    const handleYearChange = (event) => {
+        console.log(event.target.value);
+        setSelectedYear(event.target.value);
+    }
 
     return (
         <div className="lineChart">
@@ -59,8 +129,13 @@ export function LineChart(props) {
                 options={options}
                 data={graphData}
             /> 
-            <p>{typeof(props.lineChartData)}</p>
-            <p>{JSON.stringify(props.lineChartData['Time Series (Digital Currency Monthly)'], undefined, 2)}</p>
+            {/* {<p>{JSON.stringify(props.lineChartData, undefined, 2)}</p>} */}
+            <select onChange={handleYearChange}>
+                <option value="all">2019-2022</option>
+                <option value={currentYear}>{currentYear}</option>
+                <option value={currentYear - 1}>{currentYear - 1}</option>
+                <option value={currentYear - 2}>{currentYear - 2}</option>
+            </select>
         </div>
         
     )

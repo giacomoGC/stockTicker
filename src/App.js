@@ -1,53 +1,45 @@
 import { useEffect, useState } from 'react';
 import { LineChart } from './LineChart.js';
+import { TodayValue } from './TodayValue.js';
+import { getStonks } from './api.js';
 
 function App() {
   const [tickerData, setTickerData] = useState();
+  const [timeSeries, setTimeSeries] = useState();
+  const [apiKey, setApiKey] = useState();
   const [historicalTickerData, setHistoricalTickerData] = useState('');
-  const [price, setPrice] = useState(-1);
-  const [ticker, setTicker] = useState('GME');
-  const [range, setRange] = useState('1');
-  const [startDay, setStartDay] = useState('2022-02-15');
-  const [endDay, setEndDay] = useState('2022-02-15');
-  const [url, setUrl] = useState("https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_MONTHLY&symbol=BTC&market=EUR&apikey=SODHIHBS3VVG5YSB");
-  
+  const [url, setUrl] = useState(`https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_MONTHLY&symbol=BTC&market=EUR&apikey=${apiKey}`);
+
+  useEffect(() => {
+    async function getKey() {
+      const response = await fetch('http://localhost:8000/apiKey', {
+        "method": "GET",
+        "headers": {'User-Agent': 'request'}
+      })
+      .catch(err => {
+        console.error(err);
+      });
+      const json = await response.json();
+      setApiKey(json);
+    }
+    
+    getKey();
+  }, [])
+
   useEffect(() => {
     getStonks(url)
       .then((data) => {
         setTickerData(data);
+        setTimeSeries(data['Time Series (Digital Currency Monthly)']);
       })
   }, [url])
-
-  // useEffect(() => {
-  //   getStonks(historicalUrl)
-  //     .then((historicalData) => {
-  //       setHistoricalTickerData(historicalData);
-  //     })
-  // }, [historicalUrl])
-
-  useEffect(() => {
-    //console.log(tickerData['Time Series (Digital Currency Monthly)']);
-  }, [tickerData, range, startDay, endDay])
-
-  let setStartDayTimeout = '';
-  let setEndDayTimeout = '';
-
-  async function getStonks(url) {
-    const response = await fetch(url, {
-      "method": "GET",
-      "headers": {'User-Agent': 'request'}
-    })
-    .catch(err => {
-      console.error(err);
-    });
-    return response.json();
-  }
 
   return (
     <div className="App">
       <br />
-      <LineChart lineChartData={tickerData} />
-      {/* <p>{JSON.stringify(tickerData)}</p> */}
+      {<LineChart lineChartData={timeSeries} />}
+      <TodayValue data={timeSeries} />
+      {/* {<p>{JSON.stringify(timeSeries, undefined, 2)}</p>} */}
     </div>
   );
 }
